@@ -30,3 +30,22 @@ using (reviewer_id = auth.uid()) with check (reviewer_id = auth.uid());
 -- 如果你的表已存在但缺少 reviewer_id，不需要执行 reviewer_id 版本；当前网页兼容原表结构。
 -- 若希望之后按 auth.uid() 精细限制写入，可单独执行：
 -- alter table public.weekly_reviews add column reviewer_id uuid references auth.users(id);
+
+
+create table if not exists public.review_people (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+insert into public.review_people (name, sort_order) values
+('谈超',1),('林耀威',2),('张鑫达',3),('林智杰',4),('林国延',5),('冯昱',6),('陈奕明',7),('王锦锋',8)
+on conflict (name) do nothing;
+
+alter table public.review_people enable row level security;
+drop policy if exists "reviewers can read people" on public.review_people;
+create policy "reviewers can read people" on public.review_people for select to authenticated using (true);
+drop policy if exists "reviewers can manage people" on public.review_people;
+create policy "reviewers can manage people" on public.review_people for all to authenticated using (true) with check (true);
