@@ -12,13 +12,16 @@ create table if not exists public.weekly_reviews (
 
 alter table public.weekly_reviews enable row level security;
 
+drop policy if exists "reviewers can read reviews" on public.weekly_reviews;
 create policy "reviewers can read reviews"
 on public.weekly_reviews for select to anon, authenticated using (true);
 
+drop policy if exists "reviewers can insert own reviews" on public.weekly_reviews;
 create policy "reviewers can insert own reviews"
 on public.weekly_reviews for insert to anon, authenticated
 with check (reviewer_name = current_setting('request.jwt.claims', true)::json->>'name');
 
+drop policy if exists "reviewers can update own reviews" on public.weekly_reviews;
 create policy "reviewers can update own reviews"
 on public.weekly_reviews for update to anon, authenticated
 using (reviewer_name = current_setting('request.jwt.claims', true)::json->>'name')
