@@ -26,3 +26,7 @@ with check (reviewer_id = auth.uid());
 drop policy if exists "reviewers can update own reviews" on public.weekly_reviews;
 create policy "reviewers can update own reviews" on public.weekly_reviews for update to authenticated
 using (reviewer_id = auth.uid()) with check (reviewer_id = auth.uid());
+
+-- 如果你的表已存在但缺少 reviewer_id，不需要执行 reviewer_id 版本；当前网页兼容原表结构。
+-- 若希望之后按 auth.uid() 精细限制写入，可单独执行：
+-- alter table public.weekly_reviews add column reviewer_id uuid references auth.users(id);
