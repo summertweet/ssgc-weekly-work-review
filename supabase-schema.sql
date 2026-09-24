@@ -1,6 +1,7 @@
--- 每周工作评价：Supabase 数据库结构与权限
+-- 每周工作评价：Supabase 数据结构与权限
 create table if not exists public.weekly_reviews (
   id uuid primary key default gen_random_uuid(),
+  reviewer_id uuid references auth.users(id) not null default auth.uid(),
   reviewer_name text not null check (reviewer_name in ('高泽雄','林少雄','蔡灿嵘','吴世友','陈炳煌')),
   week_start date not null,
   person_name text not null check (person_name in ('谈超','林耀威','张鑫达','林智杰','林国延','冯昱','陈奕明','王锦锋')),
@@ -10,43 +11,18 @@ create table if not exists public.weekly_reviews (
   unique (reviewer_name, week_start, person_name)
 );
 
+alter table public.weekly_reviews add column if not exists reviewer_id uuid references auth.users(id);
+update public.weekly_reviews set reviewer_id = auth.uid() where reviewer_id is null;
+alter table public.weekly_reviews alter column reviewer_id set default auth.uid();
 alter table public.weekly_reviews enable row level security;
 
 drop policy if exists "reviewers can read reviews" on public.weekly_reviews;
-create policy "reviewers can read reviews"
-on public.weekly_reviews for select to authenticated using (true);
+create policy "reviewers can read reviews" on public.weekly_reviews for select to authenticated using (true);
 
 drop policy if exists "reviewers can insert own reviews" on public.weekly_reviews;
-create policy "reviewers can insert own reviews"
-on public.weekly_reviews for insert to authenticated
-with check (
-  reviewer_name = case auth.email()
-    when 'gzx@ssgc-weekly-review.local' then '高泽雄'
-    when 'lsx@ssgc-weekly-review.local' then '林少雄'
-    when 'ccr@ssgc-weekly-review.local' then '蔡灿嵘'
-    when 'wsy@ssgc-weekly-review.local' then '吴世友'
-    when 'cbh@ssgc-weekly-review.local' then '陈炳煌'
-  end
-);
+create policy "reviewers can insert own reviews" on public.weekly_reviews for insert to authenticated
+with check (reviewer_id = auth.uid());
 
 drop policy if exists "reviewers can update own reviews" on public.weekly_reviews;
-create policy "reviewers can update own reviews"
-on public.weekly_reviews for update to authenticated
-using (
-  reviewer_name = case auth.email()
-    when 'gzx@ssgc-weekly-review.local' then '高泽雄'
-    when 'lsx@ssgc-weekly-review.local' then '林少雄'
-    when 'ccr@ssgc-weekly-review.local' then '蔡灿嵘'
-    when 'wsy@ssgc-weekly-review.local' then '吴世友'
-    when 'cbh@ssgc-weekly-review.local' then '陈炳煌'
-  end
-)
-with check (
-  reviewer_name = case auth.email()
-    when 'gzx@ssgc-weekly-review.local' then '高泽雄'
-    when 'lsx@ssgc-weekly-review.local' then '林少雄'
-    when 'ccr@ssgc-weekly-review.local' then '蔡灿嵘'
-    when 'wsy@ssgc-weekly-review.local' then '吴世友'
-    when 'cbh@ssgc-weekly-review.local' then '陈炳煌'
-  end
-);
+create policy "reviewers can update own reviews" on public.weekly_reviews for update to authenticated
+using (reviewer_id = auth.uid()) with check (reviewer_id = auth.uid());
